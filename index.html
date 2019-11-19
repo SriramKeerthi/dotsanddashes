@@ -67,9 +67,9 @@
 	</style>
 	<script type="text/javascript">
 		const urlParams = new URLSearchParams(window.location.search);
-		const players = urlParams.get('p') == null ? 2 : urlParams.get('p');
-		const vertical_dots = urlParams.get('v') == null ? 5 : urlParams.get('v');
-		const horizontal_dots = urlParams.get('h') == null ? 5 : urlParams.get('h');
+		const players = parseInt(urlParams.get('p') == null ? 2 : urlParams.get('p'), 10);
+		const vertical_dots = parseInt(urlParams.get('v') == null ? 5 : urlParams.get('v'), 10);
+		const horizontal_dots = parseInt(urlParams.get('h') == null ? 5 : urlParams.get('h'), 10);
 		
 		var board = {};
 		var curr_player = 0;
@@ -78,11 +78,19 @@
 
 		function drawBoard() { // Draws the board to display
 			if (players < 1) {
-				console.log("Not enough players");
+				document.getElementById("playerState").innerHTML = "<b>Not enough players</b>";
+				return;
+			}
+			if (players > 8) {
+				document.getElementById("playerState").innerHTML = "<b>Too many players</b>";
 				return;
 			}
 			if (vertical_dots <= 2 || horizontal_dots <= 2) {
-				console.log("Board too small");
+				document.getElementById("playerState").innerHTML = "<b>Board too small</b>";
+				return;
+			}
+			if (vertical_dots > 10 || horizontal_dots > 10) {
+				document.getElementById("playerState").innerHTML = "<b>Board too big</b>";
 				return;
 			}
 			var gameBoard = document.getElementById("gameBoard");
@@ -230,7 +238,6 @@
 				board[line] = 1;
 				var lineEle = document.getElementById(line);
 				lineEle.classList.add("line-clicked");
-				
 
 				// Calculate points
 				var points = calculatePoints(pos1, pos2);
