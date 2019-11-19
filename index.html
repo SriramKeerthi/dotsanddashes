@@ -1,0 +1,255 @@
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Dots and Dashes</title>
+    <link rel="icon" type="image/png" href="./dotsanddashes.png">
+</head>
+<body>
+	<div>
+		<div id="gameBoard" width="500px" height="500px">
+		</div>
+		<div id="scoreBoard" class="scoreboard" width="500px">
+			<b>Scores:</b>
+		</div>
+	</div>
+	<style>
+		.dot {
+			height: 10px;
+			width: 10px;
+			background-color: #333;
+			border-radius: 50%;
+			display: inline-block;
+		}
+		.line-horizontal {
+			width: 40px;
+			height: 10px;
+			display: inline-block;
+			background-color: #eee;
+		}
+		.line-vertical {
+			width: 10px;
+			height: 40px;
+			display: inline-block;
+			background-color: #eee;
+		}
+		.line-clicked {
+			background-color: #333;
+		}
+		.owner-icon {
+			width: 40px;
+			height: 40px;
+			margin: 0px;
+			padding: 0px;
+			display: inline-block;
+			/*background-color: #ccc;*/
+			text-align: center;
+		}
+		.owner-label {
+			font-family: monospace;
+			font-size: 2em;
+			font-weight: bold;
+			margin-top: 4px;
+			width: 100%;
+			height: 100%;
+			float: left;
+		}
+		.nl {
+			clear: both;
+			margin:0px;
+			border:none;
+		}
+		.scoreboard {
+			font-family: monospace;
+			font-size: 3em;
+		}
+	</style>
+	<script type="text/javascript">
+		const players = 2;
+		const vertical_dots = 3;
+		const horizontal_dots = 5;
+		
+		var board = {};
+		var curr_player = 0;
+		var score = {};
+		var game_finished = false;
+
+		function drawBoard() { // Draws the board to display
+			if (players < 1) {
+				console.log("Not enough players");
+				return;
+			}
+			if (vertical_dots <= 2 || horizontal_dots <= 2) {
+				console.log("Board too small");
+				return;
+			}
+			var gameBoard = document.getElementById("gameBoard");
+			var i, j;
+			for (i = 0; i < vertical_dots; i++) {
+				for (j = 0; j < horizontal_dots; j++) { // Draw the dots
+					var dotNumber = ((i * horizontal_dots) + j);
+					var box = document.createElement("span");
+					box.id = "dot" + dotNumber;
+					box.classList.add("dot");
+					gameBoard.appendChild(box);
+					if (j + 1 < horizontal_dots) { // Draw the horizontal lines between the dots
+						var line = document.createElement("span");
+						line.id = "line" + dotNumber + "To" + (dotNumber + 1);
+						line.classList.add("line-horizontal");
+						line.addEventListener("click", clickHandler(dotNumber, dotNumber + 1));
+						gameBoard.appendChild(line);
+					}
+				}
+				var hr = document.createElement("hr");
+				hr.classList.add("nl"); // Next line
+				gameBoard.appendChild(hr);
+				if (i + 1 < vertical_dots) {
+					for (j = 0; j < horizontal_dots; j++ ) { // Draw the vertical lines
+						var lineDotNumber = ((i * horizontal_dots) + j);
+						var line = document.createElement("span");
+						line.id="line" + lineDotNumber + "To" + (lineDotNumber + horizontal_dots);
+						line.classList.add("line-vertical");
+						line.addEventListener("click", clickHandler(lineDotNumber, lineDotNumber + horizontal_dots));
+						gameBoard.appendChild(line);
+						if (j + 1 < horizontal_dots) { // Draw the boxes inside the lines
+							var box = document.createElement("div");
+							box.id = "box" + lineDotNumber;
+							box.classList.add("owner-icon");
+							var boxLabel = document.createElement("span");
+							boxLabel.id = "boxLabel" + lineDotNumber;
+							boxLabel.classList.add("owner-label");
+							box.appendChild(boxLabel);
+							gameBoard.appendChild(box);
+						}
+					}
+				}
+				var hr = document.createElement("hr");
+				hr.classList.add("nl");
+				gameBoard.appendChild(hr);
+			}
+		}
+
+		drawBoard();
+
+		function linesAbove(pos1, pos2) {
+			// Find bounding lines of the box above pos1 and pos2
+			var lines = [];
+			if (pos2 < horizontal_dots) { // No lines above, this is a line on the first row
+				return lines;
+			}
+			lines.push("line" + (pos1 - horizontal_dots) + "To" + pos1); // Left
+			lines.push("line" + (pos2 - horizontal_dots) + "To" + pos2); // Right
+			lines.push("line" + (pos1 - horizontal_dots) + "To" + (pos2 - horizontal_dots)); // Top
+			return lines;
+		}
+
+		function linesBelow(pos1, pos2) {
+			// Find bounding lines of the box below pos1 and pos2
+			var lines = [];
+			if (pos1 + horizontal_dots >= vertical_dots * horizontal_dots) { // No lines below, this is a line on the last row
+				return lines;
+			}
+			lines.push("line" + pos1 + "To" + (pos1 + horizontal_dots)); // Left
+			lines.push("line" + pos2 + "To" + (pos2 + horizontal_dots)); // Right
+			lines.push("line" + (pos1 + horizontal_dots) + "To" + (pos2 + horizontal_dots)); // Bottom
+			return lines;
+		}
+
+		function linesLeft(pos1, pos2) {
+			// Find bounding lines of the box to the left of pos1 and pos2
+			var lines = [];
+			if (pos1 % horizontal_dots == 0) { // No lines to the left, this is a line on the first column
+				return lines;
+			}
+			lines.push("line" + (pos1 - 1) + "To" + pos1); // Top
+			lines.push("line" + (pos2 - 1) + "To" + pos2); // Bottom
+			lines.push("line" + (pos1 - 1) + "To" + (pos2 - 1)); // Left
+			return lines;
+		}
+
+		function linesRight(pos1, pos2) {
+			// Find bounding lines of the box to the right of pos1 and pos2
+			var lines = [];
+			if (pos1 % horizontal_dots == horizontal_dots - 1) { // No lines to the right, this is a line on the last row
+				return lines;
+			}
+			lines.push("line" + pos1 + "To" + (pos1 + 1)); // Top
+			lines.push("line" + pos2 + "To" + (pos2 + 1)); // Bottom
+			lines.push("line" + (pos1 + 1) + "To" + (pos2 + 1)); // Right
+			return lines;
+		}
+
+		function calculatePoints(pos1, pos2) {
+			var boxPositions = [];
+			if (pos2 - pos1 == 1) {
+				// Horizontal line
+				var linesUpAbove = linesAbove(pos1, pos2);
+				if (linesUpAbove.length > 0 && linesUpAbove.every((l) => l in board)) {
+					boxPositions.push(pos1 - horizontal_dots);
+				}
+				var linesDownBelow = linesBelow(pos1, pos2);
+				if (linesDownBelow.length > 0 && linesDownBelow.every((l) => l in board)) {
+					boxPositions.push(pos1);
+				}
+			} else {
+				// Vertical line
+				var linesOnTheLeft = linesLeft(pos1, pos2);
+				if (linesOnTheLeft.length > 0 && linesOnTheLeft.every((l) => l in board)) {
+					boxPositions.push(pos1 - 1);
+				}
+				var linesOnTheRight = linesRight(pos1, pos2);
+				if (linesOnTheRight.length > 0 && linesOnTheRight.every((l) => l in board)) {
+					boxPositions.push(pos1);
+				}
+			}
+			boxPositions.forEach(p => {document.getElementById("boxLabel" + p).innerHTML = curr_player;});
+			return boxPositions.length; // Number of boxes equals points
+		}
+
+		function displayScores() {
+			var scoreText = "<b>Scores:</b><br>";
+			for (var player in score) {
+				scoreText = scoreText + player + ": " + score[player] + "<br>";
+			}
+			document.getElementById("scoreBoard").innerHTML = scoreText;
+		}
+
+		function clickHandler(pos1, pos2) {
+			return function() {
+				if (game_finished) { // Game isn't active
+					return;
+				}
+				line = "line" + pos1 + "To" + pos2;
+				if (line in board) { // Line was already clicked
+					return;
+				}
+				// Line was clicked
+				board[line] = 1;
+				var lineEle = document.getElementById(line);
+				lineEle.classList.add("line-clicked");
+				
+
+				// Calculate points
+				var points = calculatePoints(pos1, pos2);
+				if (points > 0) {
+					if (!(("player" + curr_player) in score)) {
+						score["Player " + curr_player] = 0;
+					}
+					score["Player " + curr_player] += points;
+				}
+
+				displayScores();
+
+				// Check if game has finished
+				if (Object.keys(board).length == (vertical_dots * 2 - 1) * horizontal_dots - vertical_dots) {
+					game_finished = true;
+					var scoreText = document.getElementById("scoreBoard").innerHTML;
+					document.getElementById("scoreBoard").innerHTML = scoreText + "<b>Game finished!</b>";
+				}
+
+				// Move to next player
+				curr_player = (curr_player + 1) % players;
+			};
+		}
+	</script>
+</body>
+</html>
