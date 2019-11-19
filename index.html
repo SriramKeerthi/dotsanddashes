@@ -66,9 +66,10 @@
 		}
 	</style>
 	<script type="text/javascript">
-		const players = 2;
-		const vertical_dots = 5;
-		const horizontal_dots = 5;
+		const urlParams = new URLSearchParams(window.location.search);
+		const players = urlParams.get('p') == null ? 2 : urlParams.get('p');
+		const vertical_dots = urlParams.get('v') == null ? 5 : urlParams.get('v');
+		const horizontal_dots = urlParams.get('h') == null ? 5 : urlParams.get('h');
 		
 		var board = {};
 		var curr_player = 0;
