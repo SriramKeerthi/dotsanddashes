@@ -70,10 +70,12 @@
 		const players = parseInt(urlParams.get('p') == null ? 2 : urlParams.get('p'), 10);
 		const vertical_dots = parseInt(urlParams.get('v') == null ? 5 : urlParams.get('v'), 10);
 		const horizontal_dots = parseInt(urlParams.get('h') == null ? 5 : urlParams.get('h'), 10);
-		
+		const winner_continues = urlParams.get('c') === "true";
+
 		var board = {};
 		var curr_player = 0;
 		var score = {};
+		var boxes = {};
 		var game_finished = false;
 
 		function drawBoard() { // Draws the board to display
@@ -213,7 +215,10 @@
 					boxPositions.push(pos1);
 				}
 			}
-			boxPositions.forEach(p => {document.getElementById("boxLabel" + p).innerHTML = curr_player + 1;});
+			boxPositions.forEach(p => {
+				boxes[p] = curr_player;
+				document.getElementById("boxLabel" + p).innerHTML = curr_player + 1;
+			});
 			return boxPositions.length; // Number of boxes equals points
 		}
 
@@ -235,7 +240,7 @@
 					return;
 				}
 				// Line was clicked
-				board[line] = 1;
+				board[line] = curr_player;
 				var lineEle = document.getElementById(line);
 				lineEle.classList.add("line-clicked");
 
@@ -257,10 +262,21 @@
 					document.getElementById("scoreBoard").innerHTML = scoreText + "<b>Game finished!</b>";
 				}
 
-				// Move to next player
-				curr_player = (curr_player + 1) % players;
+				// Move to next player if no points are scored or winner_continues is false
+				if (points == 0 || !winner_continues) {
+					curr_player = (curr_player + 1) % players;
+				}
 				document.getElementById("playerState").innerHTML = "<b>Player " + (curr_player + 1) + "/" + players + "</b>";
+				printState();
 			};
+		}
+
+		function printState() {
+			console.log("Game state: " + horizontal_dots + "x" + vertical_dots + " " + (game_finished ? "Finished" : "Running"));
+			console.log("Players: " + players + " Current Player: " + curr_player);
+			console.log(boxes);
+			console.log(board);
+			console.log(score);
 		}
 	</script>
 </body>
